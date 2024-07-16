@@ -76,17 +76,22 @@ class FixCustomFixers(fixer_base.BaseFix):
         return False
 
     def transform(self, node, results):
+        # Call the transform method when a match is found
+        ix_child = None
+        for child in node.children:
 
-        ix_child = node.children[1]
-        index_child = node.children[2]
-        if ix_child.children[1].value != 'ix':
-            return node
-        if is_integer_like(self, index_child.children[1]):
-            ix_child.children[1] = Leaf(token.NAME, 'iloc', prefix=ix_child.children[1].prefix)
-        else:
-            ix_child.children[1] = Leaf(token.NAME, 'loc', prefix=ix_child.children[1].prefix)
+            if isinstance(child, Node) and child.type == self.syms.trailer:
+                dot_child = child.children[0]
+                method_child = child.children[1]
 
+                if ix_child is None and isinstance(dot_child, Leaf) and dot_child.type == token.DOT and isinstance(method_child,
+                                                                                              Leaf) and method_child.value == 'ix':
+                    ix_child = child
+                elif ix_child is not None:
+                    index_child = child
+                    if is_integer_like(self, index_child.children[1]):
+                        ix_child.children[1] = Leaf(token.NAME, 'iloc', prefix=ix_child.children[1].prefix)
+                    else:
+                        ix_child.children[1] = Leaf(token.NAME, 'loc', prefix=ix_child.children[1].prefix)
+                    ix_child = None
         return node
-
-
-
